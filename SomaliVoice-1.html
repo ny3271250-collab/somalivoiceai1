@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Somali Voice AI</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:linear-gradient(160deg,#0a0f1e 0%,#0d1a2e 100%);color:#fff;font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px}
+
+/* HEADER */
+.header{text-align:center;padding:30px 0 20px}
+.logo{font-size:2.4rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tagline{font-size:.72rem;color:#334155;letter-spacing:.18em;text-transform:uppercase;margin-top:6px}
+
+/* CHAT */
+.chat{width:100%;max-width:420px;background:rgba(15,23,42,.8);border:1px solid rgba(56,189,248,.08);border-radius:24px;padding:16px;min-height:220px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:20px;backdrop-filter:blur(10px)}
+.chat::-webkit-scrollbar{width:3px}
+.chat::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:3px}
+
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#1e3a5f;text-align:center}
+.empty-icon{font-size:3rem;opacity:.5}
+.empty-text{font-size:.78rem;line-height:1.8;color:#334155}
+
+.msg{max-width:88%;animation:msgIn .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
+.msg.user{align-self:flex-end}
+.msg.ai{align-self:flex-start}
+.msg-name{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;padding:0 4px}
+.msg.user .msg-name{color:#38bdf8;text-align:right}
+.msg.ai .msg-name{color:#34d399}
+.msg-bubble{padding:11px 15px;border-radius:18px;font-size:.9rem;line-height:1.65}
+.msg.user .msg-bubble{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.18);border-bottom-right-radius:5px}
+.msg.ai .msg-bubble{background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);border-bottom-left-radius:5px;color:#86efac}
+
+/* MIC SECTION */
+.mic-section{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:20px}
+
+.mic-outer{position:relative;display:flex;align-items:center;justify-content:center;width:110px;height:110px}
+.mic-ripple{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(56,189,248,.25);opacity:0}
+.mic-ripple.animate{animation:ripple 1.5s ease-out infinite}
+.mic-ripple:nth-child(2){animation-delay:.5s}
+.mic-ripple:nth-child(3){animation-delay:1s}
+@keyframes ripple{0%{transform:scale(.8);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+
+.mic-btn{width:88px;height:88px;border-radius:50%;border:none;cursor:pointer;font-size:2.2rem;display:flex;align-items:center;justify-content:center;position:relative;z-index:2;transition:transform .15s;-webkit-user-select:none;user-select:none;background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(52,211,153,.15));box-shadow:0 0 0 2px rgba(56,189,248,.3),0 8px 32px rgba(0,0,0,.4)}
+.mic-btn:active{transform:scale(.92)}
+.mic-btn.on{background:linear-gradient(135deg,rgba(239,68,68,.2),rgba(248,113,113,.1));box-shadow:0 0 0 2px rgba(239,68,68,.5),0 0 40px rgba(239,68,68,.3)}
+.mic-btn.busy{opacity:.5;pointer-events:none}
+
+/* WAVEFORM */
+.waveform{display:flex;align-items:center;gap:4px;height:32px;opacity:0;transition:opacity .3s}
+.waveform.show{opacity:1}
+.wv{width:3px;border-radius:3px;background:#ef4444;animation:wvAnim 1s ease-in-out infinite}
+.wv:nth-child(1){height:8px;animation-delay:0s}
+.wv:nth-child(2){height:16px;animation-delay:.1s}
+.wv:nth-child(3){height:24px;animation-delay:.2s}
+.wv:nth-child(4){height:32px;animation-delay:.15s}
+.wv:nth-child(5){height:24px;animation-delay:.25s}
+.wv:nth-child(6){height:16px;animation-delay:.1s}
+.wv:nth-child(7){height:8px;animation-delay:0s}
+@keyframes wvAnim{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+
+.status{font-size:.7rem;color:#334155;letter-spacing:.12em;text-transform:uppercase;text-align:center;min-height:1.2rem;transition:all .3s}
+.status.rec{color:#ef4444}
+.status.think{color:#38bdf8}
+.status.speak{color:#34d399}
+
+/* LANGUAGES */
+.lang-section{width:100%;max-width:420px;margin-bottom:18px}
+.lang-title{font-size:.62rem;color:#334155;letter-spacing:.15em;text-transform:uppercase;text-align:center;margin-bottom:10px}
+.lang-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.lb{background:rgba(15,23,42,.6);border:1px solid rgba(56,189,248,.08);border-radius:12px;color:#334155;font-size:.65rem;padding:9px 4px;cursor:pointer;text-align:center;transition:all .2s;line-height:1.5}
+.lb:active{transform:scale(.93)}
+.lb.sel{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.35);color:#38bdf8;box-shadow:0 0 12px rgba(56,189,248,.1)}
+
+/* TEXT INPUT */
+.input-area{width:100%;max-width:420px;display:flex;gap:10px}
+.txt{flex:1;background:rgba(15,23,42,.8);border:1px solid rgba(56,189,248,.12);border-radius:16px;color:#fff;font-size:.88rem;padding:13px 16px;outline:none;font-family:inherit;transition:border-color .2s}
+.txt::placeholder{color:#1e3a5f}
+.txt:focus{border-color:rgba(56,189,248,.35)}
+.send{background:linear-gradient(135deg,rgba(56,189,248,.2),rgba(52,211,153,.2));border:1px solid rgba(56,189,248,.3);border-radius:16px;color:#38bdf8;width:50px;cursor:pointer;font-size:1.2rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.send:active{transform:scale(.92)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🎙️ Somali Voice</div>
+  <div class="tagline">Somali ku hadal · AI ku jawaabaa</div>
+</div>
+
+<div class="chat" id="chat">
+  <div class="empty" id="empty">
+    <div class="empty-icon">🌍</div>
+    <div class="empty-text">Ku soo dhawow Somali Voice!<br>Badhanka riix oo Somali ku hadal<br>AI luuqadda aad doratay ku jawaabaa</div>
+  </div>
+</div>
+
+<div class="mic-section">
+  <div class="waveform" id="wave">
+    <div class="wv"></div><div class="wv"></div><div class="wv"></div>
+    <div class="wv"></div><div class="wv"></div><div class="wv"></div><div class="wv"></div>
+  </div>
+  <div class="mic-outer">
+    <div class="mic-ripple" id="r1"></div>
+    <div class="mic-ripple" id="r2"></div>
+    <div class="mic-ripple" id="r3"></div>
+    <button class="mic-btn" id="mic" onclick="toggleMic()">🎤</button>
+  </div>
+  <div class="status" id="st">Badhanka riix si aad u hadashid</div>
+</div>
+
+<div class="lang-section">
+  <div class="lang-title">🌐 Luuqadda AI-gu ku jawaabo</div>
+  <div class="lang-grid" id="lg"></div>
+</div>
+
+<div class="input-area">
+  <input class="txt" id="ti" placeholder="Ama Somali ku qor halkan..." onkeydown="if(event.key==='Enter')send()">
+  <button class="send" onclick="send()">➤</button>
+</div>
+
+<script>
+const KEY='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';
+const LANGS=[
+  {c:'so-SO',e:'🇸🇴',n:'Somali'},
+  {c:'en-US',e:'🇺🇸',n:'English'},
+  {c:'ar-SA',e:'🇸🇦',n:'Arabic'},
+  {c:'fr-FR',e:'🇫🇷',n:'French'},
+  {c:'es-ES',e:'🇪🇸',n:'Spanish'},
+  {c:'de-DE',e:'🇩🇪',n:'German'},
+  {c:'tr-TR',e:'🇹🇷',n:'Turkish'},
+  {c:'zh-CN',e:'🇨🇳',n:'Chinese'},
+  {c:'ms-MY',e:'🇲🇾',n:'Malay'},
+  {c:'am-ET',e:'🇪🇹',n:'Amharic'},
+  {c:'hi-IN',e:'🇮🇳',n:'Hindi'},
+  {c:'sw-KE',e:'🇰🇪',n:'Swahili'},
+];
+let sel=LANGS[0],isRec=false,busy=false,srec=null,mrec=null,chunks=[];
+const hist=[];
+
+// Build langs
+const lg=document.getElementById('lg');
+LANGS.forEach((l,i)=>{
+  const b=document.createElement('button');
+  b.className='lb'+(i===0?' sel':'');
+  b.innerHTML=l.e+'<br><span style="font-size:.54rem">'+l.n+'</span>';
+  b.onclick=()=>{sel=l;document.querySelectorAll('.lb').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');};
+  lg.appendChild(b);
+});
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const TRIES=['so-SO','ar-SA','en-US'];
+let li=0;
+
+function toggleMic(){
+  if(busy)return;
+  isRec?stopAll():SR?startSR():startMR();
+}
+
+function startSR(){
+  li=0;trySR(TRIES[li]);
+}
+
+function trySR(lang){
+  srec=new SR();srec.lang=lang;srec.interimResults=false;srec.maxAlternatives=1;
+  srec.onstart=()=>{isRec=true;micOn();setSt('Dhagaysanayaa — Somali ku hadal...','rec');};
+  srec.onresult=e=>{const t=e.results[0][0].transcript;stopAll();if(t.trim())ask(t.trim());};
+  srec.onerror=e=>{
+    if(e.error==='not-allowed'){stopAll();setSt('Microphone-ka oggolow!','rec');return;}
+    li++;li<TRIES.length?setTimeout(()=>trySR(TRIES[li]),200):(stopAll(),startMR());
+  };
+  srec.onend=()=>{if(isRec)stopAll();};
+  try{srec.start();}catch(e){li++;li<TRIES.length?trySR(TRIES[li]):startMR();}
+}
+
+async function startMR(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks=[];
+    mrec=new MediaRecorder(stream);
+    mrec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+    mrec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      await whisper(new Blob(chunks,{type:'audio/webm'}));
+    };
+    mrec.start();isRec=true;micOn();
+    setSt('Duubista — jooji markaad dhamayso','rec');
+  }catch(e){setSt('Microphone-ka oggolow settings-ka!','rec');}
+}
+
+async function whisper(blob){
+  busy=true;micOff();setSt('Waxaa la turjumayaa...','think');
+  document.getElementById('mic').classList.add('busy');
+  document.getElementById('mic').textContent='⌛';
+  try{
+    const fd=new FormData();
+    fd.append('file',blob,'audio.webm');
+    fd.append('model','whisper-large-v3');
+    fd.append('language','so');
+    const r=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+KEY},body:fd});
+    const d=await r.json();
+    if(d.text?.trim())await ask(d.text.trim());
+    else setSt('Cod la ma dhegeysan. Isku day.','rec');
+  }catch(e){setSt('Dib u isku day.','rec');}
+  finally{busy=false;document.getElementById('mic').classList.remove('busy');document.getElementById('mic').textContent='🎤';}
+}
+
+function stopAll(){
+  isRec=false;
+  if(srec){try{srec.stop();}catch(e){}srec=null;}
+  if(mrec&&mrec.state==='recording')mrec.stop();
+  micOff();if(!busy)setSt('Badhanka riix si aad u hadashid','');
+}
+
+function micOn(){
+  document.getElementById('mic').classList.add('on');
+  document.getElementById('mic').textContent='⏹';
+  ['r1','r2','r3'].forEach(id=>document.getElementById(id).classList.add('animate'));
+  document.getElementById('wave').classList.add('show');
+}
+
+function micOff(){
+  document.getElementById('mic').classList.remove('on');
+  document.getElementById('mic').textContent='🎤';
+  ['r1','r2','r3'].forEach(id=>document.getElementById(id).classList.remove('animate'));
+  document.getElementById('wave').classList.remove('show');
+}
+
+function send(){const t=document.getElementById('ti').value.trim();if(!t||busy)return;document.getElementById('ti').value='';ask(t);}
+
+async function ask(txt){
+  if(busy)return;
+  rmEmpty();addMsg('user',txt,'Adiga');
+  hist.push({role:'user',content:txt});
+  busy=true;setSt('Waxaa la fikiraa...','think');
+  document.getElementById('mic').classList.add('busy');
+  document.getElementById('mic').textContent='⌛';
+  const sys=`Adiga waxaad tahay turjumaan xirfadleh. Shaqadaadu waa inaad TURJUMTO oo KELIYA.
+
+XEERKA: Isticmaaluhu wuxuu ku hadlaa Somali. Adiga waa inaad erayo uu yidhi ${sel.n} afka u bedeshaa — TURJUMAAD KELIYA, jawaab kama bixin.
+
+TUSAALE:
+- Isticmaaluhu: "Caano baan u baahnahay" → Adiga: "I need milk"
+- Isticmaaluhu: "Magacaygu waa Axmed" → Adiga: "My name is Ahmed"
+- Isticmaaluhu: "Maxaad cunaysaa?" → Adiga: "What are you eating?"
+
+HAL WEEDHEED KALIYA soo celi — turjumaadda keliya — wax kale ha ku darin.`;
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+KEY},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:180,messages:[{role:'system',content:sys},...hist]})
+    });
+    const d=await r.json();
+    const rep=d.choices?.[0]?.message?.content||'Waxba lama helin.';
+    hist.push({role:'assistant',content:rep});
+    addMsg('ai',rep,'Somali Voice AI');spk(rep);
+  }catch(e){addMsg('ai','⚠️ Internet-ka hubi oo dib u isku day.','Somali Voice AI');setSt('Khalad!','rec');}
+  finally{busy=false;document.getElementById('mic').classList.remove('busy');document.getElementById('mic').textContent='🎤';if(!speechSynthesis?.speaking)setSt('Badhanka riix si aad u hadashid','');}
+}
+
+function spk(txt){
+  if(!window.speechSynthesis)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(txt);u.lang=sel.c;u.rate=0.9;u.pitch=1.05;
+  const v=speechSynthesis.getVoices().find(x=>x.lang.startsWith(sel.c.split('-')[0]));
+  if(v)u.voice=v;
+  u.onstart=()=>setSt('Hadlaya...','speak');
+  u.onend=()=>setSt('Badhanka riix si aad u hadashid','');
+  speechSynthesis.speak(u);
+}
+
+function addMsg(role,text,name){
+  const c=document.getElementById('chat');
+  const d=document.createElement('div');d.className='msg '+role;
+  d.innerHTML=`<div class="msg-name">${name}</div><div class="msg-bubble">${esc(text)}</div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function rmEmpty(){const e=document.getElementById('empty');if(e)e.remove();}
+function setSt(t,c){const el=document.getElementById('st');el.textContent=t;el.className='status '+(c||'');}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+if(window.speechSynthesis){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>speechSynthesis.getVoices();}
+</script>
+</body>
+</html>
