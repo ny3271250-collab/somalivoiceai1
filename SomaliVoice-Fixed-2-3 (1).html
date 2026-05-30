@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Somali Voice AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+:root{--bg:#0a0f1e;--card:#1a2236;--border:#2a3a5c;--accent:#3b82f6;--green:#10b981;--red:#ef4444;--text:#f1f5f9;--muted:#64748b;--radius:16px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px 40px;background-image:radial-gradient(ellipse 60% 40% at 20% 10%,rgba(59,130,246,0.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 80%,rgba(6,182,212,0.08) 0%,transparent 50%)}
+
+/* LOCK */
+#lockScreen{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:340px}
+.lock-icon{font-size:3rem}
+.lock-title{font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,#60a5fa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
+.lock-sub{font-size:0.82rem;color:var(--muted);text-align:center}
+.pin-dots{display:flex;gap:14px;margin:6px 0}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all 0.2s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.error{background:var(--red);border-color:var(--red);animation:shake 0.35s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.num-btn{background:var(--card);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:600;padding:18px 10px;cursor:pointer;transition:all 0.15s;text-align:center}
+.num-btn:active{transform:scale(0.93);background:rgba(59,130,246,0.2);border-color:var(--accent)}
+.num-btn.del{font-size:1.1rem;color:var(--muted)}
+.num-btn.empty{background:transparent;border-color:transparent;cursor:default}
+.lock-error{font-size:0.78rem;color:var(--red);min-height:18px;text-align:center}
+
+/* MAIN */
+#mainApp{display:none;flex-direction:column;align-items:center;width:100%;padding-top:10px}
+header{text-align:center;margin-bottom:20px}
+header h1{font-size:1.9rem;font-weight:700;letter-spacing:-0.5px;background:linear-gradient(135deg,#60a5fa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{color:var(--muted);font-size:0.85rem;margin-top:4px}
+
+/* LANG */
+.lang-section{width:100%;max-width:420px;margin-bottom:16px}
+.lang-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.lang-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.lang-btn{background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.7rem;padding:9px 4px 7px;cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+.lang-btn .flag{font-size:1.4rem}
+.lang-btn.active{border-color:var(--accent);background:rgba(59,130,246,0.18);color:#60a5fa}
+
+/* STATUS */
+.status-badge{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.78rem;color:var(--muted);margin-bottom:10px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.status-dot.active{background:var(--green);animation:blink 1s infinite}
+.status-dot.thinking{background:#f59e0b;animation:blink 0.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* MIC */
+.mic-area{display:flex;flex-direction:column;align-items:center;gap:12px;margin:4px 0 18px}
+.mic-ring{position:relative;width:130px;height:130px}
+.mic-ring::before,.mic-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(59,130,246,0.2)}
+.mic-ring.rec::before{animation:ripple 1.8s ease-out infinite}
+.mic-ring.rec::after{animation:ripple 1.8s ease-out 0.7s infinite}
+@keyframes ripple{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.75);opacity:0}}
+.mic-btn{position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0891b2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:2.5rem;box-shadow:0 8px 32px rgba(59,130,246,0.35);transition:transform 0.15s}
+.mic-btn:active{transform:scale(0.93)}
+.mic-btn.rec{background:linear-gradient(135deg,#dc2626,#b91c1c);box-shadow:0 8px 32px rgba(239,68,68,0.4);animation:pbtn 1.2s ease-in-out infinite}
+@keyframes pbtn{0%,100%{box-shadow:0 8px 32px rgba(239,68,68,0.4)}50%{box-shadow:0 8px 52px rgba(239,68,68,0.75)}}
+.vol-wrap{width:200px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;opacity:0;transition:opacity 0.3s}
+.vol-wrap.on{opacity:1}
+.vol-bar{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,var(--green),#60a5fa);transition:width 0.08s}
+.rec-time{font-size:1rem;font-weight:600;color:var(--red);display:none}
+.rec-time.on{display:block}
+.mic-hint{font-size:0.8rem;color:var(--muted);text-align:center;line-height:1.5}
+
+/* TEXT INPUT */
+.text-row{width:100%;max-width:420px;display:none;gap:8px;margin-bottom:10px}
+.text-row.on{display:flex}
+.text-in{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;padding:12px 14px;outline:none}
+.text-in:focus{border-color:var(--accent)}
+.send-btn{background:linear-gradient(135deg,#1d4ed8,#0891b2);border:none;border-radius:12px;color:white;font-family:'Outfit',sans-serif;font-size:0.85rem;padding:12px 16px;cursor:pointer}
+
+/* CARDS */
+.cards{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;min-height:60px;transition:border-color 0.3s}
+.card.lit{border-color:rgba(59,130,246,0.4)}
+.card-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+.card-text{font-size:0.95rem;line-height:1.65;color:var(--text);min-height:22px;white-space:pre-wrap}
+.card-text.dim{color:var(--muted);font-style:italic;font-size:0.85rem}
+.note{margin-top:16px;font-size:0.72rem;color:var(--muted);text-align:center;max-width:340px;line-height:1.75}
+.lock-btn{margin-top:18px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'Outfit',sans-serif;font-size:0.75rem;padding:6px 16px;border-radius:20px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOCK SCREEN ═══ -->
+<div id="lockScreen">
+  <div class="lock-icon">🔐</div>
+  <div class="lock-title">Somali Voice AI</div>
+  <div class="lock-sub">Lambarka sirta ah geli si aad u gasho</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="lock-error" id="lockError"></div>
+  <div class="numpad">
+    <button class="num-btn" onclick="pp('1')">1</button>
+    <button class="num-btn" onclick="pp('2')">2</button>
+    <button class="num-btn" onclick="pp('3')">3</button>
+    <button class="num-btn" onclick="pp('4')">4</button>
+    <button class="num-btn" onclick="pp('5')">5</button>
+    <button class="num-btn" onclick="pp('6')">6</button>
+    <button class="num-btn" onclick="pp('7')">7</button>
+    <button class="num-btn" onclick="pp('8')">8</button>
+    <button class="num-btn" onclick="pp('9')">9</button>
+    <button class="num-btn empty"></button>
+    <button class="num-btn" onclick="pp('0')">0</button>
+    <button class="num-btn del" onclick="pd()">⌫</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="mainApp">
+  <header>
+    <h1>🎙️ Somali Voice</h1>
+    <p>Ku hadal · AI ku turjumaa · Luuqad kasta</p>
+  </header>
+
+  <div class="lang-section">
+    <div class="lang-label">🌐 Luuqadda turjumaanka</div>
+    <div class="lang-grid">
+      <button class="lang-btn active" data-name="English"  onclick="setLang(this)"><span class="flag">🇬🇧</span>English</button>
+      <button class="lang-btn"        data-name="Somali"   onclick="setLang(this)"><span class="flag">🇸🇴</span>Somali</button>
+      <button class="lang-btn"        data-name="Arabic"   onclick="setLang(this)"><span class="flag">🇸🇦</span>Arabic</button>
+      <button class="lang-btn"        data-name="Malay"    onclick="setLang(this)"><span class="flag">🇲🇾</span>Malay</button>
+      <button class="lang-btn"        data-name="Amharic"  onclick="setLang(this)"><span class="flag">🇪🇹</span>Amharic</button>
+      <button class="lang-btn"        data-name="Chinese"  onclick="setLang(this)"><span class="flag">🇨🇳</span>Chinese</button>
+      <button class="lang-btn"        data-name="Hebrew"   onclick="setLang(this)"><span class="flag">🇮🇱</span>Hebrew</button>
+      <button class="lang-btn"        data-name="Spanish"  onclick="setLang(this)"><span class="flag">🇪🇸</span>Spanish</button>
+      <button class="lang-btn"        data-name="Hindi"    onclick="setLang(this)"><span class="flag">🇮🇳</span>Hindi</button>
+      <button class="lang-btn"        data-name="French"   onclick="setLang(this)"><span class="flag">🇫🇷</span>French</button>
+    </div>
+  </div>
+
+  <div class="status-badge">
+    <div class="status-dot" id="sDot"></div>
+    <span id="sTxt">Diyaar · Ready</span>
+  </div>
+
+  <div class="mic-area">
+    <div class="mic-ring" id="mRing">
+      <button class="mic-btn" id="mBtn" onclick="toggleRec()">🎤</button>
+    </div>
+    <div class="vol-wrap" id="vWrap"><div class="vol-bar" id="vBar"></div></div>
+    <div class="rec-time" id="rTime">⏺ 0:00</div>
+    <div class="mic-hint" id="mHint">
+      🎤 Riix → hadal → dib u riix<br/>
+      <span style="font-size:0.7rem;opacity:0.6">Ama hoose text ku qor</span>
+    </div>
+  </div>
+
+  <!-- Text fallback always visible -->
+  <div class="text-row on" id="textRow">
+    <input class="text-in" id="textIn" type="text" placeholder="Ama halkan text ku qor…" onkeydown="if(event.key==='Enter')sendText()"/>
+    <button class="send-btn" onclick="sendText()">➤</button>
+  </div>
+
+  <div class="cards">
+    <div class="card" id="iCard">
+      <div class="card-label">🗣️ Aad tiri — You said</div>
+      <div class="card-text dim" id="iTxt">Weli waxba lama hadlin…</div>
+    </div>
+    <div class="card" id="oCard">
+      <div class="card-label">🤖 Turjumaada — Translation</div>
+      <div class="card-text dim" id="oTxt">Jawaabtu halkan kasoo muuqanaysaa…</div>
+    </div>
+  </div>
+
+  <p class="note">
+    ✦ Somali ku hadal → AI luuqadda aad dooratay ku turjumaa<br/>
+    ✦ Luuqad kasta waa la turjumaa · Text-na waa la qori karaa
+  </p>
+  <button class="lock-btn" onclick="doLock()">🔒 Lock</button>
+</div>
+
+<script>
+// ═══ PIN ═══════════════════════════════════════════
+const PIN='7449';
+let pin='',tries=0,locked=false;
+
+function pp(d){
+  if(locked||pin.length>=4)return;
+  pin+=d;dots();
+  if(pin.length===4)checkPin();
+}
+function pd(){pin=pin.slice(0,-1);dots();document.getElementById('lockError').textContent=''}
+function dots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('d'+i);
+    d.classList.toggle('filled',i<pin.length);
+    d.classList.remove('error');
+  }
+}
+function checkPin(){
+  if(pin===PIN){
+    tries=0;
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('mainApp').style.display='flex';
+    document.body.style.justifyContent='flex-start';
+  } else {
+    tries++;
+    for(let i=0;i<4;i++)document.getElementById('d'+i).classList.add('error');
+    if(tries>=5){
+      locked=true;
+      document.getElementById('lockError').textContent='🚫 30 ilbiriqsi sug';
+      setTimeout(()=>{locked=false;tries=0;document.getElementById('lockError').textContent='';pin='';dots();},30000);
+    } else {
+      document.getElementById('lockError').textContent='❌ Khalad — '+(5-tries)+' jeer baad haysataa';
+      setTimeout(()=>{pin='';dots();},700);
+    }
+  }
+}
+function doLock(){
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('lockScreen').style.display='flex';
+  document.body.style.justifyContent='center';
+  pin='';dots();stopRec();
+}
+
+// ═══ APP STATE ══════════════════════════════════════
+let tgtLang='English';
+let isRec=false;
+let mediaRec=null,chunks=[],micSt=null;
+let aC=null,an=null,af=null;
+let timerInt=null,secs=0;
+
+function setLang(btn){
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  tgtLang=btn.dataset.name;
+}
+
+function setSt(state,msg){
+  const d=document.getElementById('sDot');
+  d.className='status-dot'+(state==='rec'?' active':state==='ai'?' thinking':'');
+  document.getElementById('sTxt').textContent=msg;
+}
+
+function setI(txt,dim=false){
+  const e=document.getElementById('iTxt');
+  e.textContent=txt;e.className='card-text'+(dim?' dim':'');
+  document.getElementById('iCard').classList.toggle('lit',!dim);
+}
+function setO(txt,dim=false){
+  const e=document.getElementById('oTxt');
+  e.textContent=txt;e.className='card-text'+(dim?' dim':'');
+  document.getElementById('oCard').classList.toggle('lit',!dim);
+}
+
+// ═══ VOLUME METER ═══════════════════════════════════
+function startVol(stream){
+  try{
+    aC=new(window.AudioContext||window.webkitAudioContext)();
+    an=aC.createAnalyser();an.fftSize=256;
+    aC.createMediaStreamSource(stream).connect(an);
+    const data=new Uint8Array(an.frequencyBinCount);
+    const vb=document.getElementById('vBar');
+    document.getElementById('vWrap').classList.add('on');
+    function tick(){
+      if(!isRec)return;
+      an.getByteFrequencyData(data);
+      vb.style.width=Math.min(100,data.reduce((a,b)=>a+b,0)/data.length*2.8)+'%';
+      af=requestAnimationFrame(tick);
+    }tick();
+  }catch(e){}
+}
+function stopVol(){
+  cancelAnimationFrame(af);
+  document.getElementById('vWrap').classList.remove('on');
+  document.getElementById('vBar').style.width='0%';
+  if(aC){try{aC.close();}catch(e){}aC=null;}
+}
+
+// ═══ TIMER ══════════════════════════════════════════
+function startTimer(){
+  secs=0;
+  const el=document.getElementById('rTime');
+  el.classList.add('on');
+  timerInt=setInterval(()=>{
+    secs++;
+    const m=Math.floor(secs/60),s=secs%60;
+    el.textContent='⏺ '+m+':'+(s<10?'0':'')+s;
+  },1000);
+}
+function stopTimer(){
+  clearInterval(timerInt);
+  document.getElementById('rTime').classList.remove('on');
+}
+
+// ═══ RECORDING ══════════════════════════════════════
+async function toggleRec(){
+  if(isRec){stopRec();}
+  else{await startRec();}
+}
+
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,channelCount:1,sampleRate:16000}
+    });
+    micSt=stream;
+
+    // Pick best mime
+    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/wav']
+      .find(t=>MediaRecorder.isTypeSupported(t))||'';
+
+    mediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+    chunks=[];
+    mediaRec.ondataavailable=e=>{if(e.data&&e.data.size>0)chunks.push(e.data)};
+    mediaRec.onstop=onRecStop;
+    mediaRec.start(200);
+
+    isRec=true;
+    document.getElementById('mBtn').classList.add('rec');
+    document.getElementById('mRing').classList.add('rec');
+    document.getElementById('mBtn').textContent='⏹️';
+    document.getElementById('mHint').textContent='Hadal… dib u riix marka aad dhammaysato';
+    setSt('rec','Duubaya · Recording…');
+    setI('',true);setO('',true);
+    startVol(stream);startTimer();
+
+  } catch(err){
+    if(err.name==='NotAllowedError'||err.name==='PermissionDeniedError'){
+      setSt('','⚠️ Microphone oggolow');
+      setI('Microphone-ka la ogolaaday maayo.\nSettings → Apps → Chrome → Permissions → Microphone → Allow',false);
+    } else {
+      setSt('','Khalad: '+err.message);
+      setI('Cod duubi kari waay. Text-ka isticmaal 👆',false);
+    }
+  }
+}
+
+function stopRec(){
+  if(!isRec)return;
+  isRec=false;
+  stopTimer();stopVol();
+  document.getElementById('mBtn').classList.remove('rec');
+  document.getElementById('mRing').classList.remove('rec');
+  document.getElementById('mBtn').textContent='🎤';
+  document.getElementById('mHint').innerHTML='🎤 Riix → hadal → dib u riix<br/><span style="font-size:0.7rem;opacity:0.6">Ama hoose text ku qor</span>';
+  setSt('','Fahamaya…');
+  if(mediaRec&&mediaRec.state!=='inactive'){mediaRec.stop();}
+  if(micSt){micSt.getTracks().forEach(t=>t.stop());micSt=null;}
+}
+
+// ═══ PROCESS RECORDING ══════════════════════════════
+function onRecStop(){
+  if(!chunks.length){setSt('','Cod ma jiro');return;}
+
+  // Try SpeechRecognition with multiple languages
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    setSt('','Text isticmaal');
+    setI('Browser-kaagu codka kama fahmi karo. Text-ka hoose ku qor 👆',false);
+    return;
+  }
+
+  setSt('ai','Fahamaya codka…');
+  setI('⏳ Codka waan fahamayaa…',false);
+
+  // Try Somali first, fallback to en-US
+  tryRecognize(['so-SO','en-US','ar-SA'], 0);
+}
+
+function tryRecognize(langs, idx){
+  if(idx>=langs.length){
+    // All failed — show text input highlighted
+    setSt('','Text ku qor');
+    setI('Cod si fiican lama maqlin. Hoose ku qor hadalkaaga 👇',false);
+    document.getElementById('textIn').focus();
+    return;
+  }
+
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const r=new SR();
+  r.lang=langs[idx];
+  r.continuous=false;
+  r.interimResults=false;
+  r.maxAlternatives=3;
+
+  let done=false;
+
+  r.onresult=(e)=>{
+    done=true;
+    const text=e.results[0][0].transcript.trim();
+    if(text){
+      setI(text);
+      translate(text);
+    } else {
+      tryRecognize(langs,idx+1);
+    }
+  };
+
+  r.onerror=()=>{
+    if(!done)tryRecognize(langs,idx+1);
+  };
+
+  r.onend=()=>{
+    if(!done)tryRecognize(langs,idx+1);
+  };
+
+  try{r.start();}catch(e){tryRecognize(langs,idx+1);}
+}
+
+// ═══ TEXT INPUT ══════════════════════════════════════
+function sendText(){
+  const txt=document.getElementById('textIn').value.trim();
+  if(!txt)return;
+  document.getElementById('textIn').value='';
+  setI(txt);
+  translate(txt);
+}
+
+// ═══ TRANSLATE ═══════════════════════════════════════
+async function translate(text){
+  setSt('ai','Turjumaya…');
+  setO('⏳ AI wuu shaqaynayaa…',false);
+
+  const prompt=
+`You are a professional translator. Detect the input language and translate to ${tgtLang}.
+Rules:
+- If input is Somali → translate to ${tgtLang}
+- If input is ${tgtLang} already → return it as-is  
+- Any other language → translate to ${tgtLang}
+- Output ONLY the translated text. No labels. No explanations. No quotes.
+
+Input: "${text}"`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const reply=(data.content||[]).map(c=>c.text||'').join('').trim();
+    if(!reply)throw new Error('empty');
+    setO(reply);
+    setSt('','✓ Dhammaystay · Done');
+    speak(reply);
+  }catch(e){
+    setO('❌ Internet-ka hubi.',true);
+    setSt('','Khalad');
+  }
+}
+
+// ═══ SPEAK ═══════════════════════════════════════════
+function speak(text){
+  if(!window.speechSynthesis)return;
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.92;u.pitch=1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>
