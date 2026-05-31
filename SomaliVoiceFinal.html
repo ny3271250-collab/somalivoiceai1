@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Somali Voice AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:#0a0f1e;color:#f1f5f9;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background-image:radial-gradient(ellipse 60% 40% at 20% 10%,rgba(59,130,246,0.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 80%,rgba(6,182,212,0.08) 0%,transparent 50%)}
+
+/* LOCK */
+#lock{width:100%;max-width:320px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.ltitle{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,#60a5fa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.dots{display:flex;gap:14px}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid #2a3a5c;background:transparent;transition:all 0.2s}
+.dot.on{background:#3b82f6;border-color:#3b82f6}
+.dot.err{background:#ef4444;border-color:#ef4444}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.pk{background:#1a2236;border:1.5px solid #2a3a5c;border-radius:14px;color:#f1f5f9;font-size:1.5rem;font-weight:700;padding:18px;cursor:pointer;transition:all 0.15s;font-family:inherit}
+.pk:active{background:rgba(59,130,246,0.2);border-color:#3b82f6;transform:scale(0.93)}
+.pk.ghost{background:transparent;border:none;cursor:default}
+.perr{color:#ef4444;font-size:0.8rem;min-height:18px}
+
+/* APP */
+#app{display:none;flex-direction:column;align-items:center;width:100%;max-width:420px}
+h1{font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#60a5fa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center}
+.sub{color:#64748b;font-size:0.83rem;margin-top:3px;margin-bottom:18px;text-align:center}
+
+/* LANGS */
+.llabel{font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;width:100%}
+.lgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;margin-bottom:16px}
+.lb{background:#1a2236;border:1.5px solid #2a3a5c;border-radius:10px;color:#f1f5f9;font-size:0.68rem;padding:8px 3px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all 0.2s;font-family:inherit}
+.lb .f{font-size:1.3rem}
+.lb.sel{background:rgba(59,130,246,0.18);border-color:#3b82f6;color:#60a5fa}
+
+/* STATUS */
+.sbadge{display:inline-flex;align-items:center;gap:6px;background:#1a2236;border:1px solid #2a3a5c;border-radius:20px;padding:5px 14px;font-size:0.76rem;color:#64748b;margin-bottom:14px}
+.sdot{width:7px;height:7px;border-radius:50%;background:#64748b}
+.sdot.green{background:#10b981;animation:bl 1s infinite}
+.sdot.amber{background:#f59e0b;animation:bl 0.5s infinite}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* MIC */
+.micwrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin:4px 0 16px}
+.mring{position:relative;width:120px;height:120px}
+.mring::before,.mring::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid rgba(59,130,246,0.15)}
+.mring.go::before{animation:rp 1.8s ease-out infinite}
+.mring.go::after{animation:rp 1.8s ease-out 0.7s infinite}
+@keyframes rp{0%{transform:scale(1);opacity:0.5}100%{transform:scale(1.8);opacity:0}}
+.mbtn{position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#0891b2);border:none;cursor:pointer;font-size:2.4rem;box-shadow:0 8px 30px rgba(59,130,246,0.35);transition:transform 0.15s}
+.mbtn:active{transform:scale(0.92)}
+.mbtn.go{background:linear-gradient(135deg,#dc2626,#b91c1c);box-shadow:0 8px 30px rgba(239,68,68,0.5);animation:pb 1.2s ease-in-out infinite}
+@keyframes pb{0%,100%{box-shadow:0 8px 30px rgba(239,68,68,0.4)}50%{box-shadow:0 8px 50px rgba(239,68,68,0.8)}}
+.mhint{font-size:0.78rem;color:#64748b;text-align:center;line-height:1.5}
+.rtimer{font-size:0.95rem;font-weight:600;color:#ef4444;display:none}
+.rtimer.on{display:block}
+
+/* VOLUME */
+.vwrap{width:180px;height:7px;background:#1e2d45;border-radius:4px;overflow:hidden;opacity:0;transition:opacity 0.3s}
+.vwrap.on{opacity:1}
+.vbar{height:100%;width:0%;background:linear-gradient(90deg,#10b981,#3b82f6);border-radius:4px;transition:width 0.08s}
+
+/* TEXT INPUT */
+.trow{display:flex;gap:8px;width:100%;margin-bottom:12px}
+.tin{flex:1;background:#1a2236;border:1.5px solid #2a3a5c;border-radius:12px;color:#f1f5f9;font-family:inherit;font-size:0.88rem;padding:11px 13px;outline:none;transition:border-color 0.2s}
+.tin:focus{border-color:#3b82f6}
+.tsend{background:linear-gradient(135deg,#1d4ed8,#0891b2);border:none;border-radius:12px;color:#fff;font-size:1rem;padding:11px 16px;cursor:pointer}
+
+/* CARDS */
+.card{background:#1a2236;border:1.5px solid #2a3a5c;border-radius:16px;padding:15px;width:100%;min-height:58px;margin-bottom:10px;transition:border-color 0.3s}
+.card.lit{border-color:rgba(59,130,246,0.45)}
+.clabel{font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:7px}
+.ctext{font-size:0.93rem;line-height:1.65;color:#f1f5f9;white-space:pre-wrap}
+.ctext.dim{color:#64748b;font-style:italic;font-size:0.85rem}
+
+/* SPEAK BTN */
+.speakbtn{background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:8px;color:#60a5fa;font-size:0.75rem;padding:5px 12px;cursor:pointer;margin-top:8px;display:none;font-family:inherit}
+.speakbtn.on{display:inline-block}
+
+.note{margin-top:14px;font-size:0.7rem;color:#64748b;text-align:center;line-height:1.7;max-width:320px}
+.lkbtn{margin-top:16px;background:transparent;border:1px solid #2a3a5c;color:#64748b;font-family:inherit;font-size:0.73rem;padding:5px 16px;border-radius:20px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<!-- LOCK -->
+<div id="lock">
+  <div style="font-size:2.8rem">🔐</div>
+  <div class="ltitle">Somali Voice AI</div>
+  <div style="color:#64748b;font-size:0.82rem">PIN geli si aad u gasho</div>
+  <div class="dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+  </div>
+  <div class="perr" id="perr"></div>
+  <div class="pad">
+    <button class="pk" onclick="kp('1')">1</button>
+    <button class="pk" onclick="kp('2')">2</button>
+    <button class="pk" onclick="kp('3')">3</button>
+    <button class="pk" onclick="kp('4')">4</button>
+    <button class="pk" onclick="kp('5')">5</button>
+    <button class="pk" onclick="kp('6')">6</button>
+    <button class="pk" onclick="kp('7')">7</button>
+    <button class="pk" onclick="kp('8')">8</button>
+    <button class="pk" onclick="kp('9')">9</button>
+    <button class="pk ghost"></button>
+    <button class="pk" onclick="kp('0')">0</button>
+    <button class="pk" onclick="kd()">⌫</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <h1>🎙️ Somali Voice</h1>
+  <div class="sub">Ku hadal ama ku qor · AI ku turjumaa · Luuqad kasta</div>
+
+  <div class="llabel">🌐 Luuqadda turjumaanka</div>
+  <div class="lgrid">
+    <button class="lb sel" data-n="English"  onclick="sl(this)"><span class="f">🇬🇧</span>English</button>
+    <button class="lb"     data-n="Somali"   onclick="sl(this)"><span class="f">🇸🇴</span>Somali</button>
+    <button class="lb"     data-n="Arabic"   onclick="sl(this)"><span class="f">🇸🇦</span>Arabic</button>
+    <button class="lb"     data-n="Malay"    onclick="sl(this)"><span class="f">🇲🇾</span>Malay</button>
+    <button class="lb"     data-n="Amharic"  onclick="sl(this)"><span class="f">🇪🇹</span>Amharic</button>
+    <button class="lb"     data-n="Chinese"  onclick="sl(this)"><span class="f">🇨🇳</span>Chinese</button>
+    <button class="lb"     data-n="Hebrew"   onclick="sl(this)"><span class="f">🇮🇱</span>Hebrew</button>
+    <button class="lb"     data-n="Spanish"  onclick="sl(this)"><span class="f">🇪🇸</span>Spanish</button>
+    <button class="lb"     data-n="Hindi"    onclick="sl(this)"><span class="f">🇮🇳</span>Hindi</button>
+    <button class="lb"     data-n="French"   onclick="sl(this)"><span class="f">🇫🇷</span>French</button>
+  </div>
+
+  <div class="sbadge"><div class="sdot" id="sdot"></div><span id="stxt">Diyaar · Ready</span></div>
+
+  <div class="micwrap">
+    <div class="mring" id="mring">
+      <button class="mbtn" id="mbtn" onclick="toggleMic()">🎤</button>
+    </div>
+    <div class="vwrap" id="vwrap"><div class="vbar" id="vbar"></div></div>
+    <div class="rtimer" id="rtimer">⏺ 0:00</div>
+    <div class="mhint" id="mhint">🎤 Riix → hadal → dib u riix jooji<br/><span style="font-size:0.68rem;opacity:0.6">Ama hoose text ku qor</span></div>
+  </div>
+
+  <div class="trow">
+    <input class="tin" id="tin" type="text" placeholder="Halkan text ku qor…" onkeydown="if(event.key==='Enter')sendTxt()"/>
+    <button class="tsend" onclick="sendTxt()">➤</button>
+  </div>
+
+  <div class="card" id="ic">
+    <div class="clabel">🗣️ Aad tiri — You said</div>
+    <div class="ctext dim" id="itxt">Weli waxba lama hadlin…</div>
+  </div>
+
+  <div class="card" id="oc">
+    <div class="clabel">🤖 Turjumaada — Translation</div>
+    <div class="ctext dim" id="otxt">Jawaabtu halkan kasoo muuqanaysaa…</div>
+    <button class="speakbtn" id="spkbtn" onclick="speakOut()">🔊 Dhageyso</button>
+  </div>
+
+  <p class="note">
+    ✦ Somali ku hadal → AI luuqadda aad dooratay ku turjumaa<br/>
+    ✦ English/Arabic/kasta → AI u beddelaa luuqadda aad dooratay<br/>
+    ✦ Text-na waa la qori karaa
+  </p>
+  <button class="lkbtn" onclick="doLock()">🔒 Lock</button>
+</div>
+
+<script>
+// ── PIN ─────────────────────────────────────────────────
+const CORRECT='7449';
+let pe='',ptries=0,plocked=false;
+
+function kp(d){
+  if(plocked||pe.length>=4)return;
+  pe+=d;updDots();
+  if(pe.length===4)chkPin();
+}
+function kd(){pe=pe.slice(0,-1);updDots();document.getElementById('perr').textContent=''}
+function updDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('d'+i);
+    d.className='dot'+(i<pe.length?' on':'');
+  }
+}
+function chkPin(){
+  if(pe===CORRECT){
+    ptries=0;
+    document.getElementById('lock').style.display='none';
+    const app=document.getElementById('app');
+    app.style.display='flex';
+    document.body.style.justifyContent='flex-start';
+  } else {
+    ptries++;
+    for(let i=0;i<4;i++)document.getElementById('d'+i).className='dot err';
+    if(ptries>=5){
+      plocked=true;
+      document.getElementById('perr').textContent='🚫 30 ilbiriqsi sug';
+      setTimeout(()=>{plocked=false;ptries=0;document.getElementById('perr').textContent='';pe='';updDots();},30000);
+    } else {
+      document.getElementById('perr').textContent='❌ Khalad — '+(5-ptries)+' jeer baad haysataa';
+      setTimeout(()=>{pe='';updDots();},700);
+    }
+  }
+}
+function doLock(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('lock').style.display='flex';
+  document.body.style.justifyContent='center';
+  pe='';updDots();stopMic();
+}
+
+// ── STATE ───────────────────────────────────────────────
+let tgt='English';
+let isRec=false;
+let sr=null,mr=null,mst=null;
+let chunks=[];
+let timerI=null,secs=0;
+let aC=null,an=null,af=null;
+let lastOut='';
+
+function sl(btn){
+  document.querySelectorAll('.lb').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  tgt=btn.dataset.n;
+}
+
+function setSt(type,msg){
+  const d=document.getElementById('sdot');
+  d.className='sdot'+(type==='rec'?' green':type==='ai'?' amber':'');
+  document.getElementById('stxt').textContent=msg;
+}
+function setI(txt,dim=false){
+  const e=document.getElementById('itxt');
+  e.textContent=txt;e.className='ctext'+(dim?' dim':'');
+  document.getElementById('ic').classList.toggle('lit',!dim);
+}
+function setO(txt,dim=false){
+  const e=document.getElementById('otxt');
+  e.textContent=txt;e.className='ctext'+(dim?' dim':'');
+  document.getElementById('oc').classList.toggle('lit',!dim);
+  document.getElementById('spkbtn').className='speakbtn'+(txt&&!dim?' on':'');
+  lastOut=txt;
+}
+
+// ── MIC ─────────────────────────────────────────────────
+async function toggleMic(){
+  if(isRec){stopMic();return;}
+  await startMic();
+}
+
+async function startMic(){
+  // Prefer Web Speech API
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR){startSR(SR);return;}
+  // Fallback MediaRecorder
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+    mst=stream;
+    const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+    mr=new MediaRecorder(stream,mime?{mimeType:mime}:{});
+    chunks=[];
+    mr.ondataavailable=e=>{if(e.data?.size>0)chunks.push(e.data)};
+    mr.onstop=()=>{stopUI();setSt('','Cod lama fahmin — text isticmaal');};
+    mr.start(200);
+    startUI();
+  }catch(e){
+    setSt('','⚠️ Microphone oggolow — Settings → Chrome → Permissions');
+    setI('Microphone la ogolaaday maayo. Text-ka isticmaal 👇',false);
+  }
+}
+
+function startSR(SR){
+  sr=new SR();
+  sr.lang='en-US';
+  sr.continuous=true;
+  sr.interimResults=true;
+  sr.maxAlternatives=1;
+  let final='';
+
+  sr.onstart=()=>startUI();
+
+  sr.onresult=(e)=>{
+    let interim='';final='';
+    for(let i=0;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    setI((final||interim).trim()||'…');
+  };
+
+  sr.onerror=(e)=>{
+    if(e.error==='not-allowed'){
+      stopUI();
+      setSt('','⚠️ Microphone oggolow');
+      setI('Settings → Apps → Chrome → Permissions → Microphone → Allow',false);
+    }
+  };
+
+  sr.onend=()=>{
+    stopUI();
+    const t=(document.getElementById('itxt').textContent||'').trim();
+    if(t&&t!=='…'&&t!=='Weli waxba lama hadlin…')doTranslate(t);
+  };
+
+  try{sr.start();}catch(e){setSt('','Browser ma taageero — text isticmaal');}
+}
+
+function stopMic(){
+  if(sr){try{sr.stop();}catch(e){}sr=null;}
+  if(mr&&mr.state!=='inactive'){mr.stop();}
+  if(mst){mst.getTracks().forEach(t=>t.stop());mst=null;}
+  stopUI();
+}
+
+function startUI(){
+  isRec=true;
+  document.getElementById('mbtn').classList.add('go');
+  document.getElementById('mring').classList.add('go');
+  document.getElementById('mbtn').textContent='⏹️';
+  document.getElementById('mhint').textContent='Hadal… jooji markaad dhammaysato';
+  setSt('rec','Dhegeysan yahay · Listening…');
+  setI('',true);setO('',true);
+  startVol();startTimer();
+}
+
+function stopUI(){
+  isRec=false;
+  document.getElementById('mbtn').classList.remove('go');
+  document.getElementById('mring').classList.remove('go');
+  document.getElementById('mbtn').textContent='🎤';
+  document.getElementById('mhint').innerHTML='🎤 Riix → hadal → dib u riix jooji<br/><span style="font-size:0.68rem;opacity:0.6">Ama hoose text ku qor</span>';
+  stopVol();stopTimer();
+  if(document.getElementById('stxt').textContent.includes('Listening'))setSt('','Diyaar · Ready');
+}
+
+// ── VOLUME ──────────────────────────────────────────────
+async function startVol(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    aC=new(window.AudioContext||window.webkitAudioContext)();
+    an=aC.createAnalyser();an.fftSize=256;
+    aC.createMediaStreamSource(stream).connect(an);
+    const data=new Uint8Array(an.frequencyBinCount);
+    document.getElementById('vwrap').classList.add('on');
+    function tick(){
+      if(!isRec)return;
+      an.getByteFrequencyData(data);
+      const avg=data.reduce((a,b)=>a+b,0)/data.length;
+      document.getElementById('vbar').style.width=Math.min(100,avg*2.8)+'%';
+      af=requestAnimationFrame(tick);
+    }tick();
+  }catch(e){}
+}
+function stopVol(){
+  cancelAnimationFrame(af);
+  document.getElementById('vwrap').classList.remove('on');
+  document.getElementById('vbar').style.width='0%';
+  try{aC&&aC.close();}catch(e){}
+  aC=null;
+}
+
+// ── TIMER ───────────────────────────────────────────────
+function startTimer(){
+  secs=0;
+  const el=document.getElementById('rtimer');
+  el.classList.add('on');
+  timerI=setInterval(()=>{
+    secs++;
+    const m=Math.floor(secs/60),s=secs%60;
+    el.textContent='⏺ '+m+':'+(s<10?'0':'')+s;
+  },1000);
+}
+function stopTimer(){
+  clearInterval(timerI);
+  document.getElementById('rtimer').classList.remove('on');
+}
+
+// ── TEXT INPUT ──────────────────────────────────────────
+function sendTxt(){
+  const t=document.getElementById('tin').value.trim();
+  if(!t)return;
+  document.getElementById('tin').value='';
+  setI(t);
+  doTranslate(t);
+}
+
+// ── TRANSLATE ───────────────────────────────────────────
+async function doTranslate(text){
+  if(!text||text.length<2)return;
+  setSt('ai','Turjumaya…');
+  setO('⏳ AI wuu shaqaynayaa…',false);
+
+  const prompt=`You are a professional translator.
+Detect the input language and translate to ${tgt}.
+- If already in ${tgt}, return it as-is.
+- Output ONLY the translation. No labels. No quotes. No explanation.
+Input: "${text}"`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await res.json();
+    const reply=(data.content||[]).map(c=>c.text||'').join('').trim();
+    if(!reply)throw new Error('empty');
+    setO(reply);
+    setSt('','✅ Dhammaystay · Done');
+    // Auto speak
+    speakText(reply);
+  }catch(e){
+    setO('❌ Internet-ka hubi — dib u isku day',true);
+    setSt('','Khalad');
+  }
+}
+
+// ── SPEAK ───────────────────────────────────────────────
+function speakOut(){speakText(lastOut);}
+function speakText(text){
+  if(!window.speechSynthesis||!text)return;
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.9;u.pitch=1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>
